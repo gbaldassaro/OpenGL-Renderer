@@ -1,5 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
+#include <shader/shader.h>
+
 #include <iostream>
 
 // forward declarations of functions
@@ -13,17 +16,22 @@ const unsigned int SCR_HEIGHT = 600;
 // vertex shader
 const char* vertexShaderSource = "#version 330 core\n"
 	"layout (location = 0) in vec3 aPos;\n" // "in" keyword declares the input vertex attributes
+	"layout (location = 1) in vec3 aColor;\n"
+	"out vec3 vertexColor;"
 	"void main()\n"
 	"{\n"
-	"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+	"	gl_Position = vec4(aPos, 1.0);\n"
+	"	vertexColor = aColor;"
 	"}\0";
 
 // fragment shader
 const char* fragmentShaderSource = "#version 330 core\n"
 	"out vec4 FragColor;"
+	"in vec3 vertexColor;"
+	//"uniform vec4 vertexColor;"
 	"void main()\n"
 	"{\n"
-	"	FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);"
+	"	FragColor = vec4(vertexColor, 1.0);"
 	"}\n";
 
 int main()
@@ -55,70 +63,15 @@ int main()
 #pragma endregion
 
 #pragma region Shader;
-	// creates vertex shader object that is referenced to by its ID
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-	// attaches shader code to the shader object
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	// compiles the shader. OpenGL has to dynamically compile the shader at run-time from its source code in order to use it
-	glCompileShader(vertexShader);
-
-	// checks if shader compilation is successful
-	int success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	// if success == 0, false, else, true
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	// creates fragment shader object that is referenced to by its ID
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-	// attaches shader code to the shader object
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	// compiles the shader
-	glCompileShader(fragmentShader);
-
-	// checks if shader compilation is successful
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	// if success == 0, false, else, true
-	if (!success)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	// creates shader program, which has compiled shaders linked to it and it activated when rendering
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-	// links compiled shaders to shader program
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	// checks if shader linking is successful
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-	}
-
-	// deletes shader objects once linked to the program object
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	Shader shader("vertexShader.vs", "fragmentShader.fs");
 #pragma endregion
 
 #pragma region Vertex
 	// vertices of triangle, used with VAO and VBO
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f
+		-0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, // bottom left
+		 0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // bottom right
+		 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f  // top
 	};
 	//// vertices of rectangle, used with EBO
 	//float vertices[] = {
@@ -154,9 +107,12 @@ int main()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// instructs how to read vertex attributes from the vertex buffer
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	// enables vertex attribute
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	// unbinds vertex buffer and vertex array 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -176,7 +132,15 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
 		glClear(GL_COLOR_BUFFER_BIT); // state-using function
 
-		glUseProgram(shaderProgram);
+		// activates shaders
+		shader.use();
+
+		float timeValue = glfwGetTime();
+		float redValue = sin(2 * timeValue) / 2.0f + 0.5f;
+		float greenValue = sin(2 * timeValue + 4.18879020479f) / 2.0f + 0.5f;
+		float blueValue = sin(2 * timeValue + 2.09439510239f) / 2.0f + 0.5f;
+		shader.setVec4("color", redValue, greenValue, blueValue, 1.0f);
+
 		glBindVertexArray(VAO);
 		// draws when using VAO and VBO
 		glDrawArrays(GL_TRIANGLES, 0, 3);

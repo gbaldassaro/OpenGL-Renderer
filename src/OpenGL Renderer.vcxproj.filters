@@ -15,11 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="HelloTriangle.cpp">
+    <ClCompile Include="ShaderTriangle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vertexShader.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="fragmentShader.fs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
