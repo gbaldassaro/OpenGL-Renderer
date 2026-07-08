@@ -13,27 +13,6 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// vertex shader
-const char* vertexShaderSource = "#version 330 core\n"
-	"layout (location = 0) in vec3 aPos;\n" // "in" keyword declares the input vertex attributes
-	"layout (location = 1) in vec3 aColor;\n"
-	"out vec3 vertexColor;"
-	"void main()\n"
-	"{\n"
-	"	gl_Position = vec4(aPos, 1.0);\n"
-	"	vertexColor = aColor;"
-	"}\0";
-
-// fragment shader
-const char* fragmentShaderSource = "#version 330 core\n"
-	"out vec4 FragColor;"
-	"in vec3 vertexColor;"
-	//"uniform vec4 vertexColor;"
-	"void main()\n"
-	"{\n"
-	"	FragColor = vec4(vertexColor, 1.0);"
-	"}\n";
-
 int main()
 {
 #pragma region Initialization
@@ -63,7 +42,7 @@ int main()
 #pragma endregion
 
 #pragma region Shader;
-	Shader shader("vertexShader.vs", "fragmentShader.fs");
+	Shader shader("Ch.1 - Getting Started/shaders/vertexShader.vs", "Ch.1 - Getting Started/shaders/fragmentShader.fs");
 #pragma endregion
 
 #pragma region Vertex
@@ -135,11 +114,11 @@ int main()
 		// activates shaders
 		shader.use();
 
-		float timeValue = glfwGetTime();
+		/*float timeValue = glfwGetTime();
 		float redValue = sin(2 * timeValue) / 2.0f + 0.5f;
 		float greenValue = sin(2 * timeValue + 4.18879020479f) / 2.0f + 0.5f;
 		float blueValue = sin(2 * timeValue + 2.09439510239f) / 2.0f + 0.5f;
-		shader.setVec4("color", redValue, greenValue, blueValue, 1.0f);
+		shader.setVec4("color", redValue, greenValue, blueValue, 1.0f);*/
 
 		glBindVertexArray(VAO);
 		// draws when using VAO and VBO

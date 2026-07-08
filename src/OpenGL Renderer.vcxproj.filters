@@ -15,23 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ShaderTriangle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="stb_image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Ch.1 - Getting Started\Transformations.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="vertexShader.vs">
+    <None Include="Ch.1 - Getting Started\shaders\textureFragmentShader.fs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="fragmentShader.fs">
+    <None Include="Ch.1 - Getting Started\shaders\textureVertexShader.vs">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
