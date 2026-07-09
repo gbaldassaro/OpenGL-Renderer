@@ -139,13 +139,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Ch.1 - Getting Started\Transformations.cpp" />
+    <ClCompile Include="Ch.1 - Getting Started\3DRendering.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Ch.1 - Getting Started\shaders\textureFragmentShader.fs" />
-    <None Include="Ch.1 - Getting Started\shaders\textureVertexShader.vs" />
+    <None Include="Ch.1 - Getting Started\shaders\3DFragmentShader.fs" />
+    <None Include="Ch.1 - Getting Started\shaders\3DVertexShader.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\includes\camera\camera.h" />
+    <ClInclude Include="..\includes\shader\shader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
