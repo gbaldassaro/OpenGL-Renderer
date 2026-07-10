@@ -355,4 +355,12 @@ void processInput(GLFWwindow* window)
 	{
 		camera.moveCamera(RIGHT, deltaTime);
 	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		camera.moveCamera(DOWN, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		camera.moveCamera(UP, deltaTime);
+	}
 }
