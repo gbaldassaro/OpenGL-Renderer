@@ -47,6 +47,7 @@ public:
 	{
 		unsigned int diffuseNr = 1;
 		unsigned int specularNr = 1;
+		unsigned int normalNr = 1;
 		for (unsigned int i = 0; i < textures.size(); i++)
 		{
 			// activates texture unit before binding
@@ -60,6 +61,10 @@ public:
 			else if (name == "texture_specular")
 			{
 				number = to_string(specularNr++);
+			}
+			else if (name == "texture_normal")
+			{
+				number = to_string(normalNr++);
 			}
 
 			shader.setInt((name + number).c_str(), i);

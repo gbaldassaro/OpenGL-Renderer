@@ -186,28 +186,45 @@ int main()
 		projection = glm::perspective(glm::radians(camera.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 5000.0f);
 		shader.setMat4("projection", projection);
 
-		// lighting
-		glm::vec3 lightColor = glm::vec3(0.3f, 0.3f, 1.0f);
-
 		// render the loaded model
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -0.75f, 0.0f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(0.1f));	// it's a bit too big for our scene, so scale it down
+		glm::mat3 normalMat = glm::transpose(inverse(model)); // necessary because transformations affect normal vectors differently than positions
 		shader.setMat4("model", model);
+		shader.setMat3("normalMat", normalMat);
+
+		// lighting
+		glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+
+		/*float timeValue = glfwGetTime();
+		float redValue = sin(2 * timeValue) / 2.0f + 0.5f;
+		float greenValue = sin(2 * timeValue + 4.18879020479f) / 2.0f + 0.5f;
+		float blueValue = sin(2 * timeValue + 2.09439510239f) / 2.0f + 0.5f;
+		lightColor = glm::vec3(redValue, greenValue, blueValue);*/
+
+		/*float timeValue = glfwGetTime();
+		float yPos = sin(2 * timeValue);
+		glm::vec3 lightPos = glm::vec3(0.0f, yPos, 2.0f);*/
+		glm::vec3 lightPos = camera.pos;
+		shader.setVec3("lightPos", lightPos);
 		shader.setVec3("lightColor", lightColor);
+		shader.setFloat("ambientStrength", 0.1f);
+		shader.setVec3("viewPos", camera.pos);
+		shader.setFloat("specularStrength", 0.5f);
 		myModel.Draw(shader);
 
 		// light cube
-		lightShader.use();
+		/*lightShader.use();
 		lightShader.setMat4("projection", projection);
 		lightShader.setMat4("view", view);
 		glm::mat4 model2 = glm::mat4(1.0f);
-		model2 = glm::translate(model2, glm::vec3(0.0f, 1.0f, 0.0f));
+		model2 = glm::translate(model2, lightPos);
 		model2 = glm::scale(model2, glm::vec3(0.2f));
 		lightShader.setMat4("model", model2);
 		lightShader.setVec3("lightColor", lightColor);
 		glBindVertexArray(lightVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, 36);*/
 
 		// swaps the front and back buffers of the specified window's double 
 		glfwSwapBuffers(window);
