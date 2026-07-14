@@ -21,7 +21,7 @@
     <ClCompile Include="stb_image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Ch.3 - Model Loading\ModelViewer.cpp">
+    <ClCompile Include="Ch.2 - Lighting\LitModelViewer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -40,10 +40,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Ch.3 - Model Loading\shaders\modelFragmentShader.fs">
+    <None Include="Ch.2 - Lighting\shaders\lightFragmentShader.fs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.3 - Model Loading\shaders\modelVertexShader.vs">
+    <None Include="Ch.2 - Lighting\shaders\lightVertexShader.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Ch.2 - Lighting\shaders\lightSourceFragmentShader.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Ch.2 - Lighting\shaders\lightSourceVertexShader.vs">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

@@ -6,7 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 const float sensitivity = 0.075f;
-float speed = 30.0f;
+float speed = 3.0f;
 
 float yaw = -90.0f;
 float pitch = 0.0f;
@@ -43,9 +43,14 @@ public:
 		updateCameraDirection();
 	}
 
-	void moveCamera(moveDirection direction, float deltaTime)
+	void moveCamera(moveDirection direction, bool shiftHeld, float deltaTime)
 	{
 		float velocity = speed * deltaTime;
+		if (shiftHeld)
+		{
+			velocity *= 2;
+		}
+
 		if (direction == FORWARD)
 		{
 			pos += velocity * forward;

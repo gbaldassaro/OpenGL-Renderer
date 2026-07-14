@@ -46,6 +46,9 @@ build-*/
 .vs/
 x64/
 
+# Model directory
+resources/
+
 # CMake generated files
 CMakeFiles/
 CMakeCache.txt

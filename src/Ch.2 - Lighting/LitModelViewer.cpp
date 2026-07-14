@@ -74,12 +74,72 @@ int main()
 
 	// enables depth testing
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+#pragma endregion
+
+#pragma region Light Object
+
+	float vertices[] = {
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+		-0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+		-0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f,
+	};
+
+	unsigned int VBO, lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBindVertexArray(lightVAO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 
 #pragma endregion
 
 #pragma region Shader
 
-	Shader shader("Ch.3 - Model Loading/shaders/modelVertexShader.vs", "Ch.3 - Model Loading/shaders/modelFragmentShader.fs");
+	Shader shader("Ch.2 - Lighting/shaders/lightVertexShader.vs", "Ch.2 - Lighting/shaders/lightFragmentShader.fs");
+	Shader lightShader("Ch.2 - Lighting/shaders/lightSourceVertexShader.vs", "Ch.2 - Lighting/shaders/lightSourceFragmentShader.fs");
 
 #pragma endregion
 
@@ -126,12 +186,28 @@ int main()
 		projection = glm::perspective(glm::radians(camera.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 5000.0f);
 		shader.setMat4("projection", projection);
 
+		// lighting
+		glm::vec3 lightColor = glm::vec3(0.3f, 0.3f, 1.0f);
+
 		// render the loaded model
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -0.75f, 0.0f)); // translate it down so it's at the center of the scene
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f) * 0.1f);	// it's a bit too big for our scene, so scale it down
+		model = glm::scale(model, glm::vec3(0.1f));	// it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
+		shader.setVec3("lightColor", lightColor);
 		myModel.Draw(shader);
+
+		// light cube
+		lightShader.use();
+		lightShader.setMat4("projection", projection);
+		lightShader.setMat4("view", view);
+		glm::mat4 model2 = glm::mat4(1.0f);
+		model2 = glm::translate(model2, glm::vec3(0.0f, 1.0f, 0.0f));
+		model2 = glm::scale(model2, glm::vec3(0.2f));
+		lightShader.setMat4("model", model2);
+		lightShader.setVec3("lightColor", lightColor);
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// swaps the front and back buffers of the specified window's double 
 		glfwSwapBuffers(window);
@@ -181,28 +257,34 @@ void processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 	}
 
+	bool shiftHeld = false;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+	{
+		shiftHeld = true;
+	}
+
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		camera.moveCamera(FORWARD, deltaTime);
+		camera.moveCamera(FORWARD, shiftHeld, deltaTime);
 	}
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 	{
-		camera.moveCamera(BACK, deltaTime);
+		camera.moveCamera(BACK, shiftHeld, deltaTime);
 	}
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 	{
-		camera.moveCamera(LEFT, deltaTime);
+		camera.moveCamera(LEFT, shiftHeld, deltaTime);
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
-		camera.moveCamera(RIGHT, deltaTime);
+		camera.moveCamera(RIGHT, shiftHeld, deltaTime);
 	}
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 	{
-		camera.moveCamera(DOWN, deltaTime);
+		camera.moveCamera(DOWN, shiftHeld, deltaTime);
 	}
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
-		camera.moveCamera(UP, deltaTime);
+		camera.moveCamera(UP, shiftHeld, deltaTime);
 	}
 }
