@@ -79,9 +79,67 @@ int main()
 
 #pragma endregion
 
+#pragma region Light Object
+
+	float vertices[] = {
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+		-0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f, -0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+
+		-0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f, -0.5f,
+		 0.5f, -0.5f,  0.5f,
+		 0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f,  0.5f,
+		-0.5f, -0.5f, -0.5f,
+
+		-0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f, -0.5f,
+		 0.5f,  0.5f,  0.5f,
+		 0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f,  0.5f,
+		-0.5f,  0.5f, -0.5f,
+	};
+
+	unsigned int VBO, lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBindVertexArray(lightVAO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+#pragma endregion
+
 #pragma region Shader
 
-	Shader shader("Ch.3 - Model Loading/shaders/modelVertexShader.vs", "Ch.3 - Model Loading/shaders/modelFragmentShader.fs");
+	Shader shader("Ch.2 - Lighting/shaders/lightVertexShader.vs", "Ch.2 - Lighting/shaders/materialFragmentShader.fs");
+	Shader lightShader("Ch.2 - Lighting/shaders/lightSourceVertexShader.vs", "Ch.2 - Lighting/shaders/lightSourceFragmentShader.fs");
 
 #pragma endregion
 
@@ -131,9 +189,61 @@ int main()
 		// render the loaded model
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -0.75f, 0.0f)); // translate it down so it's at the center of the scene
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f) * 0.1f);	// it's a bit too big for our scene, so scale it down
+		model = glm::scale(model, glm::vec3(0.1f));	// it's a bit too big for our scene, so scale it down
+		glm::mat3 normalMat = glm::transpose(inverse(model)); // necessary because transformations affect normal vectors differently than positions
 		shader.setMat4("model", model);
+		shader.setMat3("normalMat", normalMat);
+
+		// lighting
+		glm::vec3 lightColor = glm::vec3(1.0f);
+		glm::vec3 lightPos = camera.pos;
+
+		// light cube
+		/*float yPos = sin(2 * currentTime);
+		glm::vec3 lightPos2 = glm::vec3(0.0f, yPos, 2.0f);
+
+		lightShader.use();
+		lightShader.setMat4("projection", projection);
+		lightShader.setMat4("view", view);
+		glm::mat4 model2 = glm::mat4(1.0f);
+		model2 = glm::translate(model2, lightPos2);
+		model2 = glm::scale(model2, glm::vec3(0.1f));
+		lightShader.setMat4("model", model2);
+		glm::vec3 lightColor2 = glm::vec3(0.9f, 0.4f, 0.0f);
+		lightShader.setVec3("lightColor", lightColor2);
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);*/
+
+		shader.use();
+
+		// directional light
+		shader.setVec3("directionalLight.direction", glm::vec3(-0.1f, -1.0f, -0.3f)); // directional light
+		shader.setVec3("directionalLight.ambient", lightColor * 0.1f);
+		shader.setVec3("directionalLight.diffuse", lightColor);
+		shader.setVec3("directionalLight.specular", lightColor);
+
+		// point lights
+		shader.setVec3("pointLights[0].position", lightPos);
+		shader.setVec3("pointLights[0].ambient", lightColor * 0.1f);
+		shader.setVec3("pointLights[0].diffuse", lightColor);
+		shader.setVec3("pointLights[0].specular", lightColor);
+		shader.setFloat("pointLights[0].constant", 1.0f);
+		shader.setFloat("pointLights[0].linear", 0.22f);
+		shader.setFloat("pointLights[0].quadratic", 0.20f);
+
+		/*shader.setVec3("pointLights[1].position", lightPos2);
+		shader.setVec3("pointLights[1].ambient", lightColor2 * 0.1f);
+		shader.setVec3("pointLights[1].diffuse", lightColor2);
+		shader.setVec3("pointLights[1].specular", lightColor2);
+		shader.setFloat("pointLights[1].constant", 1.0f);
+		shader.setFloat("pointLights[1].linear", 0.22f);
+		shader.setFloat("pointLights[1].quadratic", 0.20f);*/
+
+		shader.setVec3("viewPos", camera.pos);
+
 		myModel.Draw(shader);
+
+		// std::cout << camera.pos.x << " " << camera.pos.y << " " << camera.pos.z << std::endl;
 
 		// swaps the front and back buffers of the specified window's double 
 		glfwSwapBuffers(window);
