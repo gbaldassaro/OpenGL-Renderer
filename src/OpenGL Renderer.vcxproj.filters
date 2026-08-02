@@ -21,7 +21,7 @@
     <ClCompile Include="stb_image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Ch.2 - Lighting\Materials.cpp">
+    <ClCompile Include="Ch.4-5 - Advanced Topics\AdvancedRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -40,16 +40,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Ch.2 - Lighting\shaders\lightFragmentShader.fs">
+    <None Include="Ch.4-5 - Advanced Topics\shaders\light.vs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.2 - Lighting\shaders\lightSourceFragmentShader.fs">
+    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSource.fs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.2 - Lighting\shaders\lightSourceVertexShader.vs">
+    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSource.vs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.2 - Lighting\shaders\materialFragmentShader.fs">
+    <None Include="Ch.4-5 - Advanced Topics\shaders\material.fs">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

@@ -47,7 +47,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// creates a window object
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", glfwGetPrimaryMonitor(), NULL);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGL Renderer", glfwGetPrimaryMonitor(), NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -138,8 +138,8 @@ int main()
 
 #pragma region Shader
 
-	Shader shader("Ch.2 - Lighting/shaders/lightVertexShader.vs", "Ch.2 - Lighting/shaders/materialFragmentShader.fs");
-	Shader lightShader("Ch.2 - Lighting/shaders/lightSourceVertexShader.vs", "Ch.2 - Lighting/shaders/lightSourceFragmentShader.fs");
+	Shader shader("Ch.4-5 - Advanced Topics/shaders/light.vs", "Ch.4-5 - Advanced Topics/shaders/material.fs");
+	Shader lightShader("Ch.4-5 - Advanced Topics/shaders/lightSource.vs", "Ch.4-5 - Advanced Topics/shaders/lightSource.fs");
 
 #pragma endregion
 
@@ -151,7 +151,7 @@ int main()
 
 #pragma region Model
 
-	Model myModel("[model path]");
+	Model myModel("../resources/kiln/kiln.obj");
 
 #pragma endregion
 
@@ -183,7 +183,11 @@ int main()
 
 		// projection matrix
 		glm::mat4 projection;
-		projection = glm::perspective(glm::radians(camera.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 5000.0f);
+		float near = 0.1f;
+		float far = 100.0f;
+		shader.setFloat("near", near);
+		shader.setFloat("far", far);
+		projection = glm::perspective(glm::radians(camera.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, near, far);
 		shader.setMat4("projection", projection);
 
 		// render the loaded model
@@ -217,10 +221,18 @@ int main()
 		shader.use();
 
 		// directional light
-		//shader.setVec3("directionalLight.direction", glm::vec3(-0.1f, -1.0f, -0.3f)); // directional light
-		//shader.setVec3("directionalLight.ambient", lightColor * 0.1f);
-		//shader.setVec3("directionalLight.diffuse", lightColor);
-		//shader.setVec3("directionalLight.specular", lightColor);
+		if (length(camera.pos - glm::vec3(0.0f, 0.0f, -35.0f)) < 28.0f) 
+		{
+			shader.setBool("directionalLight.enabled", true);
+		}
+		else
+		{
+			shader.setBool("directionalLight.enabled", false);
+		}
+		shader.setVec3("directionalLight.direction", glm::vec3(-0.1f, -1.0f, 0.2f)); // directional light
+		shader.setVec3("directionalLight.ambient", lightColor * 0.1f);
+		shader.setVec3("directionalLight.diffuse", lightColor * 0.5f);
+		shader.setVec3("directionalLight.specular", lightColor * 0.5f);
 
 		// point lights
 		shader.setVec3("pointLights[0].position", lightPos);

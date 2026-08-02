@@ -33,12 +33,15 @@ public:
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
 	vector<Texture> textures;
+	bool unlit;
 
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
+	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, bool unlit)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
+
+		this->unlit = unlit;
 
 		setupMesh();
 	}
@@ -80,6 +83,8 @@ public:
 			shader.setInt(material + (name + number).c_str(), i);
 			glBindTexture(GL_TEXTURE_2D, textures[i].id);
 		}
+
+		shader.setBool("material.unlit", unlit);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindVertexArray(VAO);

@@ -78,6 +78,7 @@ private:
 		vector<Vertex> vertices;
 		vector<unsigned int> indices;
 		vector<Texture> textures;
+		bool unlit = false;
 
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 		{
@@ -124,6 +125,7 @@ private:
 		if (mesh->mMaterialIndex >= 0)
 		{
 			aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
 			vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 			textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 			vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
@@ -132,9 +134,16 @@ private:
 			textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 			vector<Texture> bumpMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
 			textures.insert(textures.end(), bumpMaps.begin(), bumpMaps.end());
+
+			int shadingModel;
+			material->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
+			if (shadingModel == aiShadingMode_NoShading)
+			{
+				unlit = true;
+			}
 		}
 
-		return Mesh(vertices, indices, textures);
+		return Mesh(vertices, indices, textures, unlit);
 	}
 
 	vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName)

@@ -141,7 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Ch.2 - Lighting\Materials.cpp" />
+    <ClCompile Include="Ch.4-5 - Advanced Topics\AdvancedRenderer.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="stb_image.cpp" />
   </ItemGroup>
@@ -152,10 +152,10 @@
     <ClInclude Include="..\includes\shader\shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Ch.2 - Lighting\shaders\lightFragmentShader.fs" />
-    <None Include="Ch.2 - Lighting\shaders\lightSourceFragmentShader.fs" />
-    <None Include="Ch.2 - Lighting\shaders\lightSourceVertexShader.vs" />
-    <None Include="Ch.2 - Lighting\shaders\materialFragmentShader.fs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\light.vs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSource.fs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSource.vs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\material.fs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
