@@ -18,6 +18,9 @@ struct DirectionalLight {
 
 	vec3 direction;
 
+	vec3 center;
+	float radius;
+
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
@@ -35,7 +38,7 @@ struct PointLight {
 	float quadratic;
 };
 
-#define NR_POINT_LIGHTS 1
+#define NR_POINT_LIGHTS 3
 
 in vec3 FragPos;
 in vec3 Normal;
@@ -55,7 +58,7 @@ uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform vec3 viewPos;
 
 float LinearizeDepth(float depth);
-vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir);
+vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main()
@@ -70,10 +73,8 @@ void main()
 		vec3 viewDir = normalize(viewPos - FragPos);
 
 		vec3 result = vec3(0.0f);
-		if (directionalLight.enabled)
-		{
-			result += CalcDirLight(directionalLight, norm, viewDir);
-		}
+
+		result += CalcDirLight(directionalLight, norm, FragPos, viewDir);
 	
 		for (int i = 0; i < NR_POINT_LIGHTS; i++)
 		{
@@ -82,8 +83,9 @@ void main()
 
 		// applies fog color to far away objects
 		float depth = LinearizeDepth(gl_FragCoord.z) / far;
-		vec3 fogColor = vec3(0.5f, 0.5f, 0.34f);
-		result -= (depth * (vec3(1.0f)-fogColor));
+		//float depth = gl_FragCoord.z / 10;
+		vec3 fogColor = vec3(0.13f, 0.13f, 0.13f);
+		result = mix(result, fogColor, depth);
 
 		vec4 texColor = texture(material.texture_diffuse1, TexCoord);
 		FragColor = vec4(result, texColor.w);
@@ -98,30 +100,33 @@ float LinearizeDepth(float depth)
 	return (2.0 * near * far) / (far + near - z * (far - near));
 }
 
-vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir)
+vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-	vec3 lightDir = normalize(-light.direction);
+	vec3 result = vec3(0.0f);
+	if (length(fragPos - light.center) < light.radius){
+		vec3 lightDir = normalize(-light.direction);
 	
-	// ambient lighting
-	vec3 diffuseColor = material.hasDiffuse ? vec3(texture(material.texture_diffuse1, TexCoord)) : vec3(1.0f, 0.0f, 0.0f); // sets diffuse color to red if no texture
-	vec3 ambient = light.ambient * diffuseColor;
+		// ambient lighting
+		vec3 diffuseColor = material.hasDiffuse ? vec3(texture(material.texture_diffuse1, TexCoord)) : vec3(1.0f, 0.0f, 0.0f); // sets diffuse color to red if no texture
+		vec3 ambient = light.ambient * diffuseColor;
 
-	// diffuse lighting
-	float diff = max(dot(normal, lightDir), 0.0f);
-	vec3 diffuse = light.diffuse * diff * diffuseColor;
+		// diffuse lighting
+		float diff = max(dot(normal, lightDir), 0.0f);
+		vec3 diffuse = light.diffuse * diff * diffuseColor;
 
-	// specular lighting
-	vec3 specularColor = material.hasSpecular ? vec3(texture(material.texture_specular1, TexCoord)) : vec3(0.0f); // sets specularColor to black if no texture
-	float spec = 0.0f;
-	// blinn-phong specular highlight
-	vec3 halfwayDir = normalize(lightDir + viewDir);
-	spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess * 2);
-	// phong specular highlight
-	// vec3 reflectDir = reflect(-lightDir, normal);
-	// spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
-	vec3 specular = light.specular * spec * specularColor;
+		// specular lighting
+		vec3 specularColor = material.hasSpecular ? vec3(texture(material.texture_specular1, TexCoord)) : vec3(0.0f); // sets specularColor to black if no texture
+		float spec = 0.0f;
+		// blinn-phong specular highlight
+		vec3 halfwayDir = normalize(lightDir + viewDir);
+		spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess * 2);
+		// phong specular highlight
+		// vec3 reflectDir = reflect(-lightDir, normal);
+		// spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
+		vec3 specular = light.specular * spec * specularColor;
 
-	vec3 result = ambient + diffuse + specular;
+		result = ambient + diffuse + specular;
+	}
 	return result;
 }
 

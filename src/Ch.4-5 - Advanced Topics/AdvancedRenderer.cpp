@@ -38,8 +38,6 @@ float lastTime = 0.0f;
 
 int main()
 {
-#pragma region Initialization
-
 	// initialize and configure the GLFW window
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -77,85 +75,11 @@ int main()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-#pragma endregion
-
-#pragma region Light Object
-
-	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-	};
-
-	unsigned int VBO, lightVAO;
-	glGenVertexArrays(1, &lightVAO);
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glBindVertexArray(lightVAO);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-#pragma endregion
-
-#pragma region Shader
-
 	Shader shader("Ch.4-5 - Advanced Topics/shaders/vertex.vs", "Ch.4-5 - Advanced Topics/shaders/fragment.fs");
-	Shader lightShader("Ch.4-5 - Advanced Topics/shaders/lightSourceVertex.vs", "Ch.4-5 - Advanced Topics/shaders/lightSourceFragment.fs");
-
-#pragma endregion
-
-#pragma region Texture
 
 	stbi_set_flip_vertically_on_load(true);
 
-#pragma endregion
-
-#pragma region Model
-
-	Model myModel("[model path]");
-
-#pragma endregion
-
-#pragma region Rendering
+	Model myModel("../resources/kiln/kiln.obj");
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -172,6 +96,7 @@ int main()
 		// clears color buffer and depth buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // state-using function
 
+
 		// activates shaders
 		shader.use();
 
@@ -180,6 +105,7 @@ int main()
 		glm::mat4 view;
 		view = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
 		shader.setMat4("view", view);
+		shader.setVec3("viewPos", camera.pos);
 
 		// projection matrix
 		glm::mat4 projection;
@@ -192,47 +118,24 @@ int main()
 
 		// render the loaded model
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -0.75f, 0.0f)); // translate it down so it's at the center of the scene
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.1f));	// it's a bit too big for our scene, so scale it down
 		glm::mat3 normalMat = glm::transpose(inverse(model)); // necessary because transformations affect normal vectors differently than positions
 		shader.setMat4("model", model);
 		shader.setMat3("normalMat", normalMat);
 
+
 		// lighting
 		glm::vec3 lightColor = glm::vec3(1.0f);
 		glm::vec3 lightPos = camera.pos;
 
-		// light cube
-		//float yPos = sin(2 * currentTime);
-		//glm::vec3 lightPos2 = glm::vec3(0.0f, yPos, 2.0f);
-
-		//lightShader.use();
-		//lightShader.setMat4("projection", projection);
-		//lightShader.setMat4("view", view);
-		//glm::mat4 model2 = glm::mat4(1.0f);
-		//model2 = glm::translate(model2, lightPos2);
-		//model2 = glm::scale(model2, glm::vec3(0.1f));
-		//lightShader.setMat4("model", model2);
-		//glm::vec3 lightColor2 = glm::vec3(0.9f, 0.4f, 0.0f);
-		//lightShader.setVec3("lightColor", lightColor2);
-		//glBindVertexArray(lightVAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		shader.use();
-
 		// directional light
-		if (length(camera.pos - glm::vec3(0.0f, 0.0f, -35.0f)) < 28.0f) 
-		{
-			shader.setBool("directionalLight.enabled", true);
-		}
-		else
-		{
-			shader.setBool("directionalLight.enabled", false);
-		}
 		shader.setVec3("directionalLight.direction", glm::vec3(-0.1f, -1.0f, 0.2f)); // directional light
-		shader.setVec3("directionalLight.ambient", lightColor * 0.1f);
-		shader.setVec3("directionalLight.diffuse", lightColor * 0.5f);
-		shader.setVec3("directionalLight.specular", lightColor * 0.5f);
+		shader.setVec3("directionalLight.center", glm::vec3(0.0f, 0.0f, -35.0f));
+		shader.setFloat("directionalLight.radius", 27.25f);
+		shader.setVec3("directionalLight.ambient", lightColor * 0.05f);
+		shader.setVec3("directionalLight.diffuse", lightColor * 0.05f);
+		shader.setVec3("directionalLight.specular", lightColor * 0.05f);
 
 		// point lights
 		shader.setVec3("pointLights[0].position", lightPos);
@@ -240,18 +143,28 @@ int main()
 		shader.setVec3("pointLights[0].diffuse", lightColor);
 		shader.setVec3("pointLights[0].specular", lightColor);
 		shader.setFloat("pointLights[0].constant", 1.0f);
-		shader.setFloat("pointLights[0].linear", 0.22f);
-		shader.setFloat("pointLights[0].quadratic", 0.20f);
+		shader.setFloat("pointLights[0].linear", 0.7f); // range = 7
+		shader.setFloat("pointLights[0].quadratic", 1.8f);
 
-		/*shader.setVec3("pointLights[1].position", lightPos2);
-		shader.setVec3("pointLights[1].ambient", lightColor2 * 0.1f);
-		shader.setVec3("pointLights[1].diffuse", lightColor2);
-		shader.setVec3("pointLights[1].specular", lightColor2);
+		glm::vec3 lightPos2 = glm::vec3(0.39f, 0.449f, -0.311f);
+		glm::vec3 torchColor = glm::vec3(1.0f, 0.9f, 0.75f);
+		shader.setVec3("pointLights[1].position", lightPos2);
+		shader.setVec3("pointLights[1].ambient", torchColor * 0.1f);
+		shader.setVec3("pointLights[1].diffuse", torchColor);
+		shader.setVec3("pointLights[1].specular", torchColor);
 		shader.setFloat("pointLights[1].constant", 1.0f);
-		shader.setFloat("pointLights[1].linear", 0.22f);
-		shader.setFloat("pointLights[1].quadratic", 0.20f);*/
+		shader.setFloat("pointLights[1].linear", 0.9f); // range = 4
+		shader.setFloat("pointLights[1].quadratic", 4.69f);
 
-		shader.setVec3("viewPos", camera.pos);
+		glm::vec3 lightPos3 = glm::vec3(-0.465f, 0.449f, -0.311f);
+		shader.setVec3("pointLights[2].position", lightPos3);
+		shader.setVec3("pointLights[2].ambient", torchColor * 0.1f);
+		shader.setVec3("pointLights[2].diffuse", torchColor);
+		shader.setVec3("pointLights[2].specular", torchColor);
+		shader.setFloat("pointLights[2].constant", 1.0f);
+		shader.setFloat("pointLights[2].linear", 0.9f); // range = 4
+		shader.setFloat("pointLights[2].quadratic", 4.69f);
+
 
 		myModel.Draw(shader);
 
@@ -262,7 +175,6 @@ int main()
 		// checks if any input events are triggered, updates window state, and calls corresponding functions
 		glfwPollEvents();
 	}
-#pragma endregion
 
 	// cleans/deletes all of GLFW's resources once render loop is exited
 	glfwTerminate();

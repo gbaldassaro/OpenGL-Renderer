@@ -43,12 +43,6 @@
     <None Include="Ch.4-5 - Advanced Topics\shaders\fragment.fs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSourceFragment.fs">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSourceVertex.vs">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="Ch.4-5 - Advanced Topics\shaders\vertex.vs">
       <Filter>Resource Files</Filter>
     </None>
