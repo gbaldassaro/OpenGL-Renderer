@@ -138,8 +138,8 @@ int main()
 
 #pragma region Shader
 
-	Shader shader("Ch.4-5 - Advanced Topics/shaders/light.vs", "Ch.4-5 - Advanced Topics/shaders/material.fs");
-	Shader lightShader("Ch.4-5 - Advanced Topics/shaders/lightSource.vs", "Ch.4-5 - Advanced Topics/shaders/lightSource.fs");
+	Shader shader("Ch.4-5 - Advanced Topics/shaders/vertex.vs", "Ch.4-5 - Advanced Topics/shaders/fragment.fs");
+	Shader lightShader("Ch.4-5 - Advanced Topics/shaders/lightSourceVertex.vs", "Ch.4-5 - Advanced Topics/shaders/lightSourceFragment.fs");
 
 #pragma endregion
 
@@ -151,7 +151,7 @@ int main()
 
 #pragma region Model
 
-	Model myModel("../resources/kiln/kiln.obj");
+	Model myModel("[model path]");
 
 #pragma endregion
 

@@ -152,10 +152,10 @@
     <ClInclude Include="..\includes\shader\shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Ch.4-5 - Advanced Topics\shaders\light.vs" />
-    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSource.fs" />
-    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSource.vs" />
-    <None Include="Ch.4-5 - Advanced Topics\shaders\material.fs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\fragment.fs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSourceFragment.fs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\lightSourceVertex.vs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\vertex.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

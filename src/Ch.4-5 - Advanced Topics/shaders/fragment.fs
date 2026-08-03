@@ -43,6 +43,8 @@ in vec2 TexCoord;
 
 out vec4 FragColor;
 
+uniform bool blinn;
+
 // clipping planes
 uniform float near;
 uniform float far;
@@ -110,8 +112,13 @@ vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 viewDir)
 
 	// specular lighting
 	vec3 specularColor = material.hasSpecular ? vec3(texture(material.texture_specular1, TexCoord)) : vec3(0.0f); // sets specularColor to black if no texture
-	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
+	float spec = 0.0f;
+	// blinn-phong specular highlight
+	vec3 halfwayDir = normalize(lightDir + viewDir);
+	spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess * 2);
+	// phong specular highlight
+	// vec3 reflectDir = reflect(-lightDir, normal);
+	// spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
 	vec3 specular = light.specular * spec * specularColor;
 
 	vec3 result = ambient + diffuse + specular;
@@ -132,8 +139,13 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 
 	// specular lighting
 	vec3 specularColor = material.hasSpecular ? vec3(texture(material.texture_specular1, TexCoord)) : vec3(0.0f); // sets specularColor to black if no texture
-	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
+	float spec = 0.0f;
+	// blinn-phong specular highlight
+	vec3 halfwayDir = normalize(lightDir + viewDir);
+	spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess * 2);
+	// phong specular highlight
+	// vec3 reflectDir = reflect(-lightDir, normal);
+	// spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
 	vec3 specular = light.specular * spec * specularColor;
 
 	// attenuation

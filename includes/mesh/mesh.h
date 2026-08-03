@@ -33,13 +33,15 @@ public:
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
 	vector<Texture> textures;
+	float shininess;
 	bool unlit;
 
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, bool unlit)
+	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, float shininess, bool unlit)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
+		this->shininess = shininess;
 
 		this->unlit = unlit;
 
@@ -84,6 +86,7 @@ public:
 			glBindTexture(GL_TEXTURE_2D, textures[i].id);
 		}
 
+		shader.setFloat("material.shininess", shininess);
 		shader.setBool("material.unlit", unlit);
 
 		glActiveTexture(GL_TEXTURE0);
