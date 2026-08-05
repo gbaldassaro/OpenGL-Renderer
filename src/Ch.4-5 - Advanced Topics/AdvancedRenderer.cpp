@@ -13,6 +13,8 @@
 #include <iostream>
 
 // forward declarations of functions
+void renderQuad();
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double dx, double dy);
@@ -27,7 +29,7 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 2.0f);
 glm::vec3 cameraForward = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 Camera camera(cameraPos, cameraForward, cameraUp);
@@ -73,13 +75,43 @@ int main()
 	// enables depth testing
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	Shader shader("Ch.4-5 - Advanced Topics/shaders/vertex.vs", "Ch.4-5 - Advanced Topics/shaders/fragment.fs");
+	Shader depthShader("Ch.4-5 - Advanced Topics/shaders/shadowMapMaker.vs", "Ch.4-5 - Advanced Topics/shaders/shadowMapMaker.fs");
+	Shader depthShaderDebug("Ch.4-5 - Advanced Topics/shaders/shadowMap.vs", "Ch.4-5 - Advanced Topics/shaders/shadowMap.fs");
+
+	// shadow mapping
+	unsigned int depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+	const unsigned int SHADOW_WIDTH = 4096, SHADOW_HEIGHT = 4096;
+
+	unsigned int depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	depthShaderDebug.use();
+	depthShaderDebug.setInt("depthMap", 0);
+	shader.use();
+	shader.setInt("shadowMap", 10);
 
 	stbi_set_flip_vertically_on_load(true);
 
-	Model myModel("../resources/kiln/kiln.obj");
+	Model myModel("../resources/kiln/kiln_no_sky.obj");
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -96,9 +128,42 @@ int main()
 		// clears color buffer and depth buffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // state-using function
 
+		// render the depth map
+		//glCullFace(GL_FRONT);
+		float nearPlane = 1.0f, farPlane = 7.5f;
+		glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, nearPlane, farPlane);
+		glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f, 3.0f, -15.0f),
+										  glm::vec3(0.0f, 0.0f, -10.0f),
+										  glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
-		// activates shaders
+		depthShader.use();
+		depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		glm::mat4 lightModel = glm::mat4(1.0f);
+		lightModel = glm::translate(lightModel, glm::vec3(0.0f, 0.0f, 0.0f));
+		lightModel = glm::scale(lightModel, glm::vec3(0.1f));	// it's a bit too big for our scene, so scale it down
+		depthShader.setMat4("model", lightModel);
+
+		myModel.Draw(depthShader);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// render scene as normal with shadow mapping (using depth map)
+		//glCullFace(GL_BACK);
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
 		shader.use();
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE10);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+
+		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
 		// creates transformation matrices and sends them to the shader
 		// view matrix
@@ -130,12 +195,13 @@ int main()
 		glm::vec3 lightPos = camera.pos;
 
 		// directional light
-		shader.setVec3("directionalLight.direction", glm::vec3(-0.1f, -1.0f, 0.2f)); // directional light
+		shader.setVec3("directionalLight.direction", glm::vec3(0.0f, 0.0f, -15.0f) - glm::vec3(0.0f, 17.0f, -35.0f)); // directional light
 		shader.setVec3("directionalLight.center", glm::vec3(0.0f, 0.0f, -35.0f));
-		shader.setFloat("directionalLight.radius", 27.25f);
+		shader.setFloat("directionalLight.innerRadius", 27.5f);
+		shader.setFloat("directionalLight.outerRadius", 28.0f);
 		shader.setVec3("directionalLight.ambient", lightColor * 0.05f);
-		shader.setVec3("directionalLight.diffuse", lightColor * 0.05f);
-		shader.setVec3("directionalLight.specular", lightColor * 0.05f);
+		shader.setVec3("directionalLight.diffuse", lightColor * 0.15f);
+		shader.setVec3("directionalLight.specular", lightColor * 0.15f);
 
 		// point lights
 		shader.setVec3("pointLights[0].position", lightPos);
@@ -165,12 +231,19 @@ int main()
 		shader.setFloat("pointLights[2].linear", 0.9f); // range = 4
 		shader.setFloat("pointLights[2].quadratic", 4.69f);
 
-
 		myModel.Draw(shader);
 
-		// std::cout << camera.pos.x << " " << camera.pos.y << " " << camera.pos.z << std::endl;
+		depthShaderDebug.use();
+		depthShaderDebug.setFloat("near_plane", nearPlane);
+		depthShaderDebug.setFloat("far_plane", farPlane);
 
-		// swaps the front and back buffers of the specified window's double 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		//renderQuad();
+
+		//std::cout << camera.pos.x << " " << camera.pos.y << " " << camera.pos.z << std::endl;
+
+		// swaps the front and back buffers of the specified window's double buffer
 		glfwSwapBuffers(window);
 		// checks if any input events are triggered, updates window state, and calls corresponding functions
 		glfwPollEvents();
@@ -180,6 +253,35 @@ int main()
 	glfwTerminate();
 	return 0;
 
+}
+
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture Coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
 }
 
 // called each time the window is resized

@@ -46,5 +46,17 @@
     <None Include="Ch.4-5 - Advanced Topics\shaders\vertex.vs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMap.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMap.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMapMaker.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMapMaker.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

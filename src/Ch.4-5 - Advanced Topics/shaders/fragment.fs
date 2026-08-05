@@ -18,8 +18,10 @@ struct DirectionalLight {
 
 	vec3 direction;
 
+	// defines area that directionalLight affects
 	vec3 center;
-	float radius;
+	float innerRadius;
+	float outerRadius;
 
 	vec3 ambient;
 	vec3 diffuse;
@@ -43,9 +45,11 @@ struct PointLight {
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoord;
+in vec4 FragPosLightSpace;
 
 out vec4 FragColor;
 
+uniform sampler2D shadowMap;
 uniform bool blinn;
 
 // clipping planes
@@ -57,6 +61,7 @@ uniform DirectionalLight directionalLight;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform vec3 viewPos;
 
+float ShadowCalculation(vec4 fragPosLightSpace);
 float LinearizeDepth(float depth);
 vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
@@ -74,7 +79,10 @@ void main()
 
 		vec3 result = vec3(0.0f);
 
-		result += CalcDirLight(directionalLight, norm, FragPos, viewDir);
+		if (length(FragPos - directionalLight.center) < directionalLight.outerRadius)
+		{		
+			result += CalcDirLight(directionalLight, norm, FragPos, viewDir);
+		}
 	
 		for (int i = 0; i < NR_POINT_LIGHTS; i++)
 		{
@@ -92,6 +100,25 @@ void main()
 	}
 }
 
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+	// performs perspective division
+	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+	// transforms to [0,1] range
+	projCoords = projCoords * 0.5 + 0.5;
+	// get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	// get depth of current fragment from light's perspective
+	float currentDepth = projCoords.z;
+	// applies bias to shadowing to correct artifacting (more bias for higher angles between light direction and surface normal)
+	// float bias = max(0.05f * (1.0) - dot(normal, lightDir)), 0.005);
+	float bias = 0.005f;
+	// determines if fragment is in shadow
+	float shadow = currentDepth - bias > closestDepth ? 1.0f : 0.0f;
+
+	return shadow;
+}
+
 float LinearizeDepth(float depth)
 {
 	// converts depth value to native device coordinates in range [-1, 1]
@@ -102,31 +129,40 @@ float LinearizeDepth(float depth)
 
 vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-	vec3 result = vec3(0.0f);
-	if (length(fragPos - light.center) < light.radius){
-		vec3 lightDir = normalize(-light.direction);
+	vec3 lightDir = normalize(-light.direction);
 	
-		// ambient lighting
-		vec3 diffuseColor = material.hasDiffuse ? vec3(texture(material.texture_diffuse1, TexCoord)) : vec3(1.0f, 0.0f, 0.0f); // sets diffuse color to red if no texture
-		vec3 ambient = light.ambient * diffuseColor;
+	// ambient lighting
+	vec3 diffuseColor = material.hasDiffuse ? vec3(texture(material.texture_diffuse1, TexCoord)) : vec3(1.0f, 0.0f, 0.0f); // sets diffuse color to red if no texture
+	vec3 ambient = light.ambient * diffuseColor;
 
-		// diffuse lighting
-		float diff = max(dot(normal, lightDir), 0.0f);
-		vec3 diffuse = light.diffuse * diff * diffuseColor;
+	// diffuse lighting
+	float diff = max(dot(normal, lightDir), 0.0f);
+	vec3 diffuse = light.diffuse * diff * diffuseColor;
 
-		// specular lighting
-		vec3 specularColor = material.hasSpecular ? vec3(texture(material.texture_specular1, TexCoord)) : vec3(0.0f); // sets specularColor to black if no texture
-		float spec = 0.0f;
-		// blinn-phong specular highlight
-		vec3 halfwayDir = normalize(lightDir + viewDir);
-		spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess * 2);
-		// phong specular highlight
-		// vec3 reflectDir = reflect(-lightDir, normal);
-		// spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
-		vec3 specular = light.specular * spec * specularColor;
+	// specular lighting
+	vec3 specularColor = material.hasSpecular ? vec3(texture(material.texture_specular1, TexCoord)) : vec3(0.0f); // sets specularColor to black if no texture
+	float spec = 0.0f;
+	// blinn-phong specular highlight
+	vec3 halfwayDir = normalize(lightDir + viewDir);
+	spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess * 2);
+	// phong specular highlight
+	// vec3 reflectDir = reflect(-lightDir, normal);
+	// spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
+	vec3 specular = light.specular * spec * specularColor;
 
-		result = ambient + diffuse + specular;
+	// blend from inner to outer radius
+	if (length(fragPos - directionalLight.center) > directionalLight.innerRadius)
+	{		
+		float distance = length(fragPos - directionalLight.center);
+		float intensity = (directionalLight.outerRadius - distance) / (directionalLight.outerRadius - directionalLight.innerRadius);
+		ambient *= intensity;
+		diffuse *= intensity;
+		specular *= intensity;
 	}
+
+	float shadow = ShadowCalculation(FragPosLightSpace);
+	vec3 result = ambient + (1.0f - shadow) * (diffuse + specular);
+
 	return result;
 }
 
