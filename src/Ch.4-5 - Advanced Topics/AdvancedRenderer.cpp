@@ -29,6 +29,12 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+bool showDepthBuffer = false;
+bool bKeyPressed = false;
+
+bool useNormalMap = false;
+bool nKeyPressed = false;
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 2.0f);
 glm::vec3 cameraForward = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -109,9 +115,9 @@ int main()
 	shader.use();
 	shader.setInt("shadowMap", 10);
 
-	stbi_set_flip_vertically_on_load(true);
+	// stbi_set_flip_vertically_on_load(true);
 
-	Model myModel("../resources/kiln/kiln_no_sky.obj");
+	Model myModel("[model path]");
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -130,11 +136,16 @@ int main()
 
 		// render the depth map
 		//glCullFace(GL_FRONT);
-		float nearPlane = 1.0f, farPlane = 7.5f;
-		glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, nearPlane, farPlane);
-		glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f, 3.0f, -15.0f),
-										  glm::vec3(0.0f, 0.0f, -10.0f),
-										  glm::vec3(0.0f, 1.0f, 0.0f));
+		//float nearPlane = 1.0f, farPlane = 7.5f;
+		//glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, nearPlane, farPlane);
+		glm::mat4 lightProjection;
+		float nearPlane = 0.1f;
+		float farPlane = 10.0f;
+		lightProjection = glm::perspective(glm::radians(camera.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, nearPlane, farPlane);
+		//glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f, 3.0f, -15.0f),
+		//								  glm::vec3(0.0f, 0.0f, -10.0f),
+		//								  glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 lightView = glm::lookAt(camera.pos, camera.pos + camera.forward, camera.up);
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
 		depthShader.use();
@@ -152,6 +163,8 @@ int main()
 		myModel.Draw(depthShader);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 
 		// render scene as normal with shadow mapping (using depth map)
 		//glCullFace(GL_BACK);
@@ -188,7 +201,6 @@ int main()
 		glm::mat3 normalMat = glm::transpose(inverse(model)); // necessary because transformations affect normal vectors differently than positions
 		shader.setMat4("model", model);
 		shader.setMat3("normalMat", normalMat);
-
 
 		// lighting
 		glm::vec3 lightColor = glm::vec3(1.0f);
@@ -239,7 +251,7 @@ int main()
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
-		//renderQuad();
+		if (showDepthBuffer) renderQuad();
 
 		//std::cout << camera.pos.x << " " << camera.pos.y << " " << camera.pos.z << std::endl;
 
@@ -325,6 +337,26 @@ void processInput(GLFWwindow* window)
 		shiftHeld = true;
 	}
 
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !bKeyPressed)
+	{
+		showDepthBuffer = !showDepthBuffer;
+		bKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE)
+	{
+		bKeyPressed = false;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS && !nKeyPressed)
+	{
+		useNormalMap = !useNormalMap;
+		nKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_N) == GLFW_RELEASE)
+	{
+		nKeyPressed = false;
+	}
+
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		camera.moveCamera(FORWARD, shiftHeld, deltaTime);
@@ -341,11 +373,11 @@ void processInput(GLFWwindow* window)
 	{
 		camera.moveCamera(RIGHT, shiftHeld, deltaTime);
 	}
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 	{
 		camera.moveCamera(DOWN, shiftHeld, deltaTime);
 	}
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 	{
 		camera.moveCamera(UP, shiftHeld, deltaTime);
 	}

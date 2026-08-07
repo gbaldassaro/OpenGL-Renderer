@@ -15,6 +15,8 @@ struct Vertex
 {
 	glm::vec3 Position;
 	glm::vec3 Normal;
+	glm::vec3 Tangent;
+	glm::vec3 Bitangent;
 	glm::vec2 TexCoords;
 };
 
@@ -126,9 +128,17 @@ private:
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 		glEnableVertexAttribArray(1);
 
-		// texture
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+		// tangents
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
 		glEnableVertexAttribArray(2);
+
+		// bitangents
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
+		glEnableVertexAttribArray(3);
+
+		// texture
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+		glEnableVertexAttribArray(4);
 
 		// unbinds vertex buffer and vertex array 
 		glBindVertexArray(0);

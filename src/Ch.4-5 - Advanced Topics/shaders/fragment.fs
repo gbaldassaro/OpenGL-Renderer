@@ -44,13 +44,15 @@ struct PointLight {
 
 in vec3 FragPos;
 in vec3 Normal;
+in vec3 Tangent;
+in vec3 Bitangent;
+in mat3 TBN;
 in vec2 TexCoord;
 in vec4 FragPosLightSpace;
 
 out vec4 FragColor;
 
 uniform sampler2D shadowMap;
-uniform bool blinn;
 
 // clipping planes
 uniform float near;
@@ -68,25 +70,31 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main()
 {
+	vec3 result = vec3(0.0f);
+
 	if (material.unlit)
 	{
 		FragColor = texture(material.texture_diffuse1, TexCoord);
 	}
+
 	else
 	{
-		vec3 norm = normalize(Normal);
+		vec3 normal = normalize(Normal);
+		normal = texture(material.texture_normal1, TexCoord).rgb;
+		normal.g = 1.0f - normal.g;
+		normal = normalize(normal * 2.0f - 1.0f);
+		normal = normalize(TBN * normal);
+		
 		vec3 viewDir = normalize(viewPos - FragPos);
-
-		vec3 result = vec3(0.0f);
 
 		if (length(FragPos - directionalLight.center) < directionalLight.outerRadius)
 		{		
-			result += CalcDirLight(directionalLight, norm, FragPos, viewDir);
+			result += CalcDirLight(directionalLight, normal, FragPos, viewDir);
 		}
 	
 		for (int i = 0; i < NR_POINT_LIGHTS; i++)
 		{
-			result += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
+			result += CalcPointLight(pointLights[i], normal, FragPos, viewDir);
 		}
 
 		// applies fog color to far away objects
@@ -96,7 +104,7 @@ void main()
 		result = mix(result, fogColor, depth);
 
 		vec4 texColor = texture(material.texture_diffuse1, TexCoord);
-		FragColor = vec4(result, texColor.w);
+		FragColor = vec4(result, texColor.a);
 	}
 }
 
@@ -160,7 +168,8 @@ vec3 CalcDirLight(DirectionalLight light, vec3 normal, vec3 fragPos, vec3 viewDi
 		specular *= intensity;
 	}
 
-	float shadow = ShadowCalculation(FragPosLightSpace);
+	//float shadow = ShadowCalculation(FragPosLightSpace);
+	float shadow = 0.0f;
 	vec3 result = ambient + (1.0f - shadow) * (diffuse + specular);
 
 	return result;
