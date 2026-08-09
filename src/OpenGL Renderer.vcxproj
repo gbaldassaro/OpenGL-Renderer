@@ -153,10 +153,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Ch.4-5 - Advanced Topics\shaders\fragment.fs" />
-    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMap.fs" />
-    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMap.vs" />
-    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMapMaker.fs" />
-    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMapMaker.vs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\depthMapRenderer.fs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\framebufferRenderer.fs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\framebufferRenderer.vs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\depthMapMaker.fs" />
+    <None Include="Ch.4-5 - Advanced Topics\shaders\depthMapMaker.vs" />
     <None Include="Ch.4-5 - Advanced Topics\shaders\vertex.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

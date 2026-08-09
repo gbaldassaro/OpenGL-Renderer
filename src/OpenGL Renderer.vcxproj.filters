@@ -46,16 +46,19 @@
     <None Include="Ch.4-5 - Advanced Topics\shaders\vertex.vs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMap.fs">
+    <None Include="Ch.4-5 - Advanced Topics\shaders\depthMapRenderer.fs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMap.vs">
+    <None Include="Ch.4-5 - Advanced Topics\shaders\framebufferRenderer.vs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMapMaker.fs">
+    <None Include="Ch.4-5 - Advanced Topics\shaders\depthMapMaker.fs">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Ch.4-5 - Advanced Topics\shaders\shadowMapMaker.vs">
+    <None Include="Ch.4-5 - Advanced Topics\shaders\depthMapMaker.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Ch.4-5 - Advanced Topics\shaders\framebufferRenderer.fs">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

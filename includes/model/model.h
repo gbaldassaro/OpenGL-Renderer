@@ -79,6 +79,7 @@ private:
 		vector<unsigned int> indices;
 		vector<Texture> textures;
 		float shininess;
+		float opacity;
 		bool unlit = false;
 
 		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -150,6 +151,7 @@ private:
 			textures.insert(textures.end(), bumpMaps.begin(), bumpMaps.end());
 
 			material->Get(AI_MATKEY_SHININESS, shininess);
+			material->Get(AI_MATKEY_OPACITY, opacity);
 
 			int shadingModel;
 			material->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
@@ -159,7 +161,7 @@ private:
 			}
 		}
 
-		return Mesh(vertices, indices, textures, shininess, unlit);
+		return Mesh(vertices, indices, textures, shininess, opacity, unlit);
 	}
 
 	vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName)

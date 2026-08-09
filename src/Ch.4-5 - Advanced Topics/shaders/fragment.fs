@@ -5,6 +5,7 @@ struct Material {
 	sampler2D texture_specular1; // texture for color of specular highlight on material
 	sampler2D texture_normal1;
 	float shininess; // impacts scattering/radius of specular highlight
+	float opacity;
 
 	bool hasDiffuse;
 	bool hasSpecular;
@@ -52,7 +53,7 @@ in vec4 FragPosLightSpace;
 
 out vec4 FragColor;
 
-uniform sampler2D shadowMap;
+uniform sampler2D depthMap;
 
 // clipping planes
 uniform float near;
@@ -74,7 +75,9 @@ void main()
 
 	if (material.unlit)
 	{
-		FragColor = texture(material.texture_diffuse1, TexCoord);
+		vec4 texColor = texture(material.texture_diffuse1, TexCoord);
+		texColor.a *= material.opacity;
+		FragColor = texColor;
 	}
 
 	else
@@ -104,7 +107,7 @@ void main()
 		result = mix(result, fogColor, depth);
 
 		vec4 texColor = texture(material.texture_diffuse1, TexCoord);
-		FragColor = vec4(result, texColor.a);
+		FragColor = vec4(result, texColor.a * material.opacity);
 	}
 }
 
@@ -115,7 +118,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 	// transforms to [0,1] range
 	projCoords = projCoords * 0.5 + 0.5;
 	// get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	float closestDepth = texture(depthMap, projCoords.xy).r;
 	// get depth of current fragment from light's perspective
 	float currentDepth = projCoords.z;
 	// applies bias to shadowing to correct artifacting (more bias for higher angles between light direction and surface normal)

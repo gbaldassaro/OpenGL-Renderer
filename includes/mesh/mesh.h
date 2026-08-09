@@ -36,15 +36,17 @@ public:
 	vector<unsigned int> indices;
 	vector<Texture> textures;
 	float shininess;
+	float opacity;
 	bool unlit;
+	glm::vec3 unlitColor;
 
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, float shininess, bool unlit)
+	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, float shininess, float opacity, bool unlit)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
 		this->shininess = shininess;
-
+		this->opacity = opacity;
 		this->unlit = unlit;
 
 		setupMesh();
@@ -89,7 +91,9 @@ public:
 		}
 
 		shader.setFloat("material.shininess", shininess);
+		shader.setFloat("material.opacity", opacity);
 		shader.setBool("material.unlit", unlit);
+		shader.setVec3("material.unlitColor", unlitColor);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindVertexArray(VAO);
