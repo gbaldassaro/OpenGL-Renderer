@@ -41,7 +41,7 @@ bool sevenKeyPressed = false;
 bool eightKeyPressed = false;
 bool nineKeyPressed = false;
 
-// 0 = normal, 1 = invert,  2 = grayscale, 3 = sharpen, 4 = blur, 5 = edge-detection, 9 = shadow-depth,
+// 0 = normal, 1 = invert,  2 = grayscale, 3 = sharpen, 4 = blur, 5 = edge-detection, 6 = bright, 7 = gaussian blur, 9 = shadow-depth
 int postProcessingEffect;
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 2.0f);
@@ -97,7 +97,7 @@ int main()
 	Shader depthMapMakerShader("Ch.4-5 - Advanced Topics/shaders/depthMapMaker.vs", "Ch.4-5 - Advanced Topics/shaders/depthMapMaker.fs");
 	Shader depthMapRendererShader("Ch.4-5 - Advanced Topics/shaders/framebufferRenderer.vs", "Ch.4-5 - Advanced Topics/shaders/depthMapRenderer.fs");
 	Shader framebufferRendererShader("Ch.4-5 - Advanced Topics/shaders/framebufferRenderer.vs", "Ch.4-5 - Advanced Topics/shaders/framebufferRenderer.fs");
-
+	
 #pragma region Framebuffers
 
 	/* 
@@ -106,20 +106,24 @@ int main()
 	Renderbuffer objects have faster writes than textures but cannot be read from, so are useful if you never need to sample data.
 	*/
 
-	// texture frame buffer
+	// main frame buffer
 	unsigned int framebufferObject;
 	glGenFramebuffers(1, &framebufferObject);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebufferObject);
 	
-	unsigned int framebufferTexture;
-	glGenTextures(1, &framebufferTexture);
-	glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferTexture, 0);
+	// create two color buffers: one for rendering scene as normal, and another for extracting bright portions
+	unsigned int framebufferTextures[2];
+	glGenTextures(2, framebufferTextures);
+	for (int i = 0; i < 2; i++)
+	{
+		glBindTexture(GL_TEXTURE_2D, framebufferTextures[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, framebufferTextures[i], 0);
+	}
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// depth and stencil render buffer
@@ -131,9 +135,33 @@ int main()
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
+	// prepares to draw to multiple colorbuffers
+	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, attachments);
+
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// ping pong framebuffers (pair of framebuffers where we render and swap, a given number of times, the other framebuffer's 
+	// color buffer into the current framebuffer's color buffer with an alternating shader effect)
+	unsigned int pingpongfbo[2];
+	glGenFramebuffers(2, pingpongfbo);
+
+	unsigned int pingpongTextures[2];
+	glGenTextures(2, pingpongTextures);
+	for (int i = 0; i < 2; i++)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, pingpongfbo[i]);
+		glBindTexture(GL_TEXTURE_2D, pingpongTextures[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH / 8, SCR_HEIGHT / 8, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongTextures[i], 0);
+	}
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// shadow mapping
 	unsigned int depthMapFBO;
@@ -162,8 +190,9 @@ int main()
 
 	// stbi_set_flip_vertically_on_load(true);
 
-	Model kilnNoSky("../resources/kiln/altar.obj");
-	Model kilnSky("../resources/kiln/kiln_sky.obj");
+	Model kiln("../resources/kiln/kiln_no_sky.obj");
+	Model sky("../resources/kiln/sky.obj");
+	Model clouds("../resources/kiln/clouds.obj");
 	Model sun("../resources/kiln/sun.obj");
 
 	// enables wireframe drawing
@@ -186,7 +215,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
 
-		glCullFace(GL_FRONT);
+		//glCullFace(GL_FRONT);
 
 		depthMapMakerShader.use();
 
@@ -210,9 +239,9 @@ int main()
 		lightModel = glm::scale(lightModel, glm::vec3(0.1f));	// it's a bit too big for our scene, so scale it down
 		depthMapMakerShader.setMat4("model", lightModel);
 
-		kilnNoSky.Draw(depthMapMakerShader);
+		kiln.Draw(depthMapMakerShader);
 
-		glCullFace(GL_BACK);
+		//glCullFace(GL_BACK);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -223,11 +252,7 @@ int main()
 		// render scene as normal with shadow mapping (using depth map)
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-		if (postProcessingEffect == 0)
-		{
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
-		else if (postProcessingEffect != 9)
+		if (postProcessingEffect != 9)
 		{
 			// bind to framebuffer to draw scene to frame buffer texture attachment
 			glBindFramebuffer(GL_FRAMEBUFFER, framebufferObject);
@@ -277,18 +302,10 @@ int main()
 
 #pragma endregion
 
-#pragma region Lights
-
-		// directional light
-		mainShader.setVec3("directionalLight.direction", glm::vec3(0.0f, 0.0f, -15.0f) - glm::vec3(0.0f, 17.0f, -35.0f)); // directional light
-		mainShader.setVec3("directionalLight.center", glm::vec3(0.0f, 0.0f, -35.0f));
-		mainShader.setFloat("directionalLight.innerRadius", 27.5f);
-		mainShader.setFloat("directionalLight.outerRadius", 28.0f);
-		mainShader.setVec3("directionalLight.ambient", lightColor * 0.10f);
-		mainShader.setVec3("directionalLight.diffuse", lightColor * 0.25f);
-		mainShader.setVec3("directionalLight.specular", lightColor * 0.25f);
+#pragma region Point Lights
 
 		// point lights
+		// player light
 		mainShader.setVec3("pointLights[0].position", lightPos);
 		mainShader.setVec3("pointLights[0].ambient", lightColor * 0.1f);
 		mainShader.setVec3("pointLights[0].diffuse", lightColor);
@@ -297,58 +314,179 @@ int main()
 		mainShader.setFloat("pointLights[0].linear", 0.7f); // range = 7
 		mainShader.setFloat("pointLights[0].quadratic", 1.8f);
 
-		glm::vec3 lightPos2 = glm::vec3(0.39f, 0.449f, -0.311f);
+		// various torches
 		glm::vec3 torchColor = glm::vec3(1.0f, 0.9f, 0.75f);
-		mainShader.setVec3("pointLights[1].position", lightPos2);
+
+		glm::vec3 lightPos1 = glm::vec3(0.39f, 0.449f, -0.311f);
+		mainShader.setVec3("pointLights[1].position", lightPos1);
 		mainShader.setVec3("pointLights[1].ambient", torchColor * 0.1f);
 		mainShader.setVec3("pointLights[1].diffuse", torchColor);
 		mainShader.setVec3("pointLights[1].specular", torchColor);
 		mainShader.setFloat("pointLights[1].constant", 1.0f);
-		mainShader.setFloat("pointLights[1].linear", 0.9f); // range = 4
-		mainShader.setFloat("pointLights[1].quadratic", 4.69f);
+		mainShader.setFloat("pointLights[1].linear", 1.5f); // range = 3
+		mainShader.setFloat("pointLights[1].quadratic", 8.33f);
 
-		glm::vec3 lightPos3 = glm::vec3(-0.465f, 0.449f, -0.311f);
-		mainShader.setVec3("pointLights[2].position", lightPos3);
+		glm::vec3 lightPos2 = glm::vec3(-0.465f, 0.449f, -0.311f);
+		mainShader.setVec3("pointLights[2].position", lightPos2);
 		mainShader.setVec3("pointLights[2].ambient", torchColor * 0.1f);
 		mainShader.setVec3("pointLights[2].diffuse", torchColor);
 		mainShader.setVec3("pointLights[2].specular", torchColor);
 		mainShader.setFloat("pointLights[2].constant", 1.0f);
-		mainShader.setFloat("pointLights[2].linear", 0.9f); // range = 4
-		mainShader.setFloat("pointLights[2].quadratic", 4.69f);
+		mainShader.setFloat("pointLights[2].linear", 1.5f); // range = 3
+		mainShader.setFloat("pointLights[2].quadratic", 8.33f);
+
+		glm::vec3 lightPos3 = glm::vec3(0.345f, 0.827f, -1.501f);
+		mainShader.setVec3("pointLights[3].position", lightPos3);
+		mainShader.setVec3("pointLights[3].ambient", torchColor * 0.1f);
+		mainShader.setVec3("pointLights[3].diffuse", torchColor);
+		mainShader.setVec3("pointLights[3].specular", torchColor);
+		mainShader.setFloat("pointLights[3].constant", 1.0f);
+		mainShader.setFloat("pointLights[3].linear", 4.5f); // range = 1
+		mainShader.setFloat("pointLights[3].quadratic", 75.0f);
+
+		glm::vec3 lightPos4 = glm::vec3(-0.371f, 0.827f, -1.501f);
+		mainShader.setVec3("pointLights[4].position", lightPos4);
+		mainShader.setVec3("pointLights[4].ambient", torchColor * 0.1f);
+		mainShader.setVec3("pointLights[4].diffuse", torchColor);
+		mainShader.setVec3("pointLights[4].specular", torchColor);
+		mainShader.setFloat("pointLights[4].constant", 1.0f);
+		mainShader.setFloat("pointLights[4].linear", 4.5f); // range = 1
+		mainShader.setFloat("pointLights[4].quadratic", 75.0f);
+
+		// fire lights
+		glm::vec3 fireColor = glm::vec3(1.0f, 0.5f, 0.25f);
+		
+		glm::vec3 lightPos5 = glm::vec3(-1.644f, -0.248f, 0.381f);
+		mainShader.setVec3("pointLights[5].position", lightPos5);
+		mainShader.setVec3("pointLights[5].ambient", torchColor * 0.1f);
+		mainShader.setVec3("pointLights[5].diffuse", torchColor);
+		mainShader.setVec3("pointLights[5].specular", torchColor);
+		mainShader.setFloat("pointLights[5].constant", 1.0f);
+		mainShader.setFloat("pointLights[5].linear", 4.5f); // range = 1
+		mainShader.setFloat("pointLights[5].quadratic", 75.0f);
+
+		glm::vec3 lightPos6 = glm::vec3(1.532f, -0.248f, 0.438f);
+		mainShader.setVec3("pointLights[6].position", lightPos6);
+		mainShader.setVec3("pointLights[6].ambient", torchColor * 0.1f);
+		mainShader.setVec3("pointLights[6].diffuse", torchColor);
+		mainShader.setVec3("pointLights[6].specular", torchColor);
+		mainShader.setFloat("pointLights[6].constant", 1.0f);
+		mainShader.setFloat("pointLights[6].linear", 4.5f); // range = 1
+		mainShader.setFloat("pointLights[6].quadratic", 75.0f);
+
+		glm::vec3 lightPos7 = glm::vec3(-0.317f, 0.207f, -1.023f);
+		mainShader.setVec3("pointLights[7].position", lightPos7);
+		mainShader.setVec3("pointLights[7].ambient", torchColor * 0.1f);
+		mainShader.setVec3("pointLights[7].diffuse", torchColor);
+		mainShader.setVec3("pointLights[7].specular", torchColor);
+		mainShader.setFloat("pointLights[7].constant", 1.0f);
+		mainShader.setFloat("pointLights[7].linear", 4.5f); // range = 1
+		mainShader.setFloat("pointLights[7].quadratic", 75.0f);
+
+		glm::vec3 lightPos8 = glm::vec3(0.275f, 0.207f, -1.016f);
+		mainShader.setVec3("pointLights[8].position", lightPos8);
+		mainShader.setVec3("pointLights[8].ambient", torchColor * 0.1f);
+		mainShader.setVec3("pointLights[8].diffuse", torchColor);
+		mainShader.setVec3("pointLights[8].specular", torchColor);
+		mainShader.setFloat("pointLights[8].constant", 1.0f);
+		mainShader.setFloat("pointLights[8].linear", 4.5f); // range = 1
+		mainShader.setFloat("pointLights[8].quadratic", 75.0f);
 
 #pragma endregion
 
-		if (postProcessingEffect != 0 && postProcessingEffect != 9)
+		if (postProcessingEffect != 9)
 		{
 			// binds the frame buffer texture to be drawn to
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+			glBindTexture(GL_TEXTURE_2D, framebufferTextures[0]);
 		}
 
 		// draws sky separately to eliminate self-occlusion issues
+		// directional light for sky
+		mainShader.setVec3("directionalLights[0].direction", glm::vec3(0.0f, 1.0f, 0.0f)); // directional light
+		mainShader.setVec3("directionalLights[0].center", glm::vec3(0.0f, 34.0f, -57.0f));
+		mainShader.setFloat("directionalLights[0].innerRadius", 26.0f);
+		mainShader.setFloat("directionalLights[0].outerRadius", 66.0f);
+		mainShader.setVec3("directionalLights[0].ambient", lightColor * 0.10f);
+		mainShader.setVec3("directionalLights[0].diffuse", lightColor * 0.20f);
+		mainShader.setVec3("directionalLights[0].specular", lightColor * 0.20f);
+		mainShader.setFloat("texOffset", 0.0f);
+
 		glDisable(GL_DEPTH_TEST);
-		sun.Draw(mainShader);
-		kilnSky.Draw(mainShader);
+		sky.Draw(mainShader);
+		//sun.Draw(mainShader);
+
+		mainShader.setFloat("texOffset", currentTime * 0.01f);
+		mainShader.setBool("useOpacityGradient", true);
+		clouds.Draw(mainShader);
+		mainShader.setFloat("texOffset", 0.0f);
+		mainShader.setBool("useOpacityGradient", false);
 		glEnable(GL_DEPTH_TEST);
 
-		kilnNoSky.Draw(mainShader);
+		// directional light for kiln
+		mainShader.setVec3("directionalLights[0].direction", glm::vec3(0.0f, 0.0f, -15.0f) - glm::vec3(0.0f, 17.0f, -35.0f)); // directional light
+		mainShader.setVec3("directionalLights[0].center", glm::vec3(0.0f, 0.0f, -35.0f));
+		mainShader.setFloat("directionalLights[0].innerRadius", 27.5f);
+		mainShader.setFloat("directionalLights[0].outerRadius", 28.0f);
+		mainShader.setVec3("directionalLights[0].ambient", lightColor * 0.10f);
+		mainShader.setVec3("directionalLights[0].diffuse", lightColor * 0.10f);
+		mainShader.setVec3("directionalLights[0].specular", lightColor * 0.10f);
+
+		kiln.Draw(mainShader);
 
 		// displays framebuffer post processing effect
-		if (postProcessingEffect != 0 && postProcessingEffect != 9)
+		if (postProcessingEffect != 7 && postProcessingEffect != 9)
 		{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			// clears color buffer and depth buffer
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			framebufferRendererShader.use();
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+			glBindTexture(GL_TEXTURE_2D, framebufferTextures[0]);
 			framebufferRendererShader.setInt("framebufferTexture", 0);
-			framebufferRendererShader.setFloat("SCR_WIDTH", (float)SCR_WIDTH);
-			framebufferRendererShader.setFloat("SCR_HEIGHT", (float)SCR_HEIGHT);
 			framebufferRendererShader.setInt("postProcessingEffect", postProcessingEffect);
+			glDisable(GL_DEPTH_TEST);
+			renderQuad();
+			glEnable(GL_DEPTH_TEST);
+		}
+
+		else if (postProcessingEffect == 7)
+		{
+			bool horizontal = true;
+			bool firstIteration = true;
+			int amount = 20;
+
+			framebufferRendererShader.use();
+			glActiveTexture(GL_TEXTURE0);
+			framebufferRendererShader.setInt("framebufferTexture", 0);
+			framebufferRendererShader.setInt("postProcessingEffect", postProcessingEffect);
+
+			framebufferRendererShader.setBool("bloomReady", false);
+
+			for (int i = 0; i < amount; i++)
+			{
+				glBindFramebuffer(GL_FRAMEBUFFER, pingpongfbo[horizontal]);
+				glViewport(0, 0, SCR_WIDTH / 8, SCR_HEIGHT / 8);
+				framebufferRendererShader.setBool("horizontal", horizontal);
+				glBindTexture(GL_TEXTURE_2D, firstIteration ? framebufferTextures[1] : pingpongTextures[!horizontal]);
+				renderQuad();
+				horizontal = !horizontal;
+				if (firstIteration) firstIteration = false;
+			}
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+			
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, framebufferTextures[0]);
+			framebufferRendererShader.setInt("framebufferTexture", 0);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, pingpongTextures[!horizontal]);
+			framebufferRendererShader.setInt("bloomTexture", 1);
+
+			framebufferRendererShader.setBool("bloomReady", true);
+
 			glDisable(GL_DEPTH_TEST);
 			renderQuad();
 			glEnable(GL_DEPTH_TEST);
@@ -449,11 +587,7 @@ void processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 	}
 
-	bool shiftHeld = false;
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-	{
-		shiftHeld = true;
-	}
+#pragma region Number Inputs
 
 	// no post-processing
 	if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS && !zeroKeyPressed)
@@ -565,6 +699,16 @@ void processInput(GLFWwindow* window)
 		nineKeyPressed = false;
 	}
 
+#pragma endregion
+
+#pragma region Movement Inputs
+
+	bool shiftHeld = false;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+	{
+		shiftHeld = true;
+	}
+
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		camera.moveCamera(FORWARD, shiftHeld, deltaTime);
@@ -589,4 +733,7 @@ void processInput(GLFWwindow* window)
 	{
 		camera.moveCamera(UP, shiftHeld, deltaTime);
 	}
+
+#pragma endregion
+
 }

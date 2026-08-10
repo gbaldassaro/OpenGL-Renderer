@@ -31,7 +31,7 @@ public:
 	glm::vec3 up;
 	glm::vec3 right;
 
-	float fov = 45.0f;
+	float fov = 60.0f;
 
 	// constructor to build the camera
 	Camera(glm::vec3 cameraPos, glm::vec3 cameraForward, glm::vec3 cameraUp)
